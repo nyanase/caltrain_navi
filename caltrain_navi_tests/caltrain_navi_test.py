@@ -8,12 +8,12 @@ t_401 = Train(401, ServiceType.L4, None)
 t_105 = Train(105, ServiceType.L1, None)
 t_701 = Train(701, ServiceType.B7, None)
 
-mountain_view.trains = [
+mountain_view.times_trains = [
   (time(6, 3), t_401),
   (time(6, 13), t_701),
   (time(6, 19), t_105),
 ] 
-palo_alto.trains = [
+palo_alto.times_trains = [
   (time(6, 10), t_401),
   (time(6, 21), t_701),
   (time(6, 31), t_105),
@@ -36,5 +36,10 @@ def test_trains_are_sorted():
   assert mountain_view.trains_are_sorted() == True
 
 def test_earliest_trains_for_time():
-  assert mountain_view.get_earliest_trains_for_time(
-    time(6, 4), num_trains=2) == mountain_view.trains[1:3]
+  assert mountain_view.earliest_trains(
+    time(6, 4), max_trains=2) == [t_701, t_105] 
+
+def test_earliest_arrival_times():
+  assert mountain_view.earliest_arrival_times(time(6,0), palo_alto) \
+    == [time(6,10), time(6,21), time(6,31)]
+    

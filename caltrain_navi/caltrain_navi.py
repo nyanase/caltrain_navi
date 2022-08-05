@@ -2,48 +2,61 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Dict, List, Tuple
 from datetime import time
-from bisect import bisect_left, bisect_right
-
-services_to_stations: Dict['ServiceType', 'Station'] = {}
-stations_to_services: Dict['Station', 'ServiceType'] = {}
-
+from bisect import bisect_left
 class ServiceType(Enum):
   L1 = auto()
   L2 = auto() 
   L4 = auto()
   B7 = auto()
 
+class Direction(Enum):
+  NB = auto()
+  SB = auto()
+
+stations_to_services: Dict['Station', List['ServiceType']] = {
+  "Mountain View": [ServiceType.L4, ServiceType.L1, ServiceType.B7],
+  "Palo Alto": [ServiceType.L4, ServiceType.L1, ServiceType.B7] 
+}
+
 @dataclass
 class Train:
   number: int
   service_type: ServiceType 
   stations: Dict[str, time] 
+  direction: Direction = Direction.NB
 
 @dataclass
 class Station:
   name: str
   zone: int
-  trains: List[Tuple[time, Train]]
+  times_trains: List[Tuple[time, Train]]
 
-  def get_earliest_trains_for_time_and_dest(self, time: time, 
-                                            dest: 'Station', 
-                                            num_trains: int = 3):
-    services = stations_to_services[dest]
-    trains_to_dest = filter(lambda train: train.service_type in services, 
-                            self.trains)
-    return self.get_earliest_trains_for_time(time, trains=trains_to_dest, 
-                                             num_trains=num_trains)
+  def earliest_arrival_times(self, time: time, 
+                      dest: 'Station', 
+                      max_trains: int = 3):
+    trains_to_dest = self.relevant_train_lines(dest)
+    trains = self.earliest_trains(time, trains=trains_to_dest, 
+                                  max_trains=max_trains) 
+    return self.arrival_times(trains, dest)
+    
+  def arrival_times(self, trains: List['Train'], dest: 'Station', 
+                        sort: bool = True):
+    return sorted((train.stations[dest.name] for train in trains))
 
-  def get_earliest_trains_for_time(self, time: time, 
-                                   trains: List[Train] = None, 
-                                   num_trains: int = 3):
-    trains = self.trains if trains is None else trains
+  def relevant_train_lines(self, dest: 'Station'):
+    services = stations_to_services[dest.name]
+    return list(filter(lambda times_train: times_train[1].service_type in services, 
+                            self.times_trains))
+
+  def earliest_trains(self, time: time, 
+                      trains: List[Train] = None, max_trains: int = 3):
+    trains = self.times_trains if trains is None else trains
     if not self.trains_are_sorted(trains=trains):
       raise Exception("Trains are not in sorted order")
     idx = bisect_left(trains, (time, None))
-    return trains[idx: min(idx+num_trains, len(trains))]
+    return list(list(zip(*trains))[1])[idx: min(idx+max_trains, len(trains))]
     
   def trains_are_sorted(self, trains: List[Train] = None):
-    trains = self.trains if trains is None else trains
+    trains = self.times_trains if trains is None else trains
     return all(trains[i][0] < trains[i+1][0] for i in range(len(trains)-1))
 

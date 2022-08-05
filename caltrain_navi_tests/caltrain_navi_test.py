@@ -4,9 +4,9 @@ from datetime import time
 
 mountain_view = Station("Mountain View", 3, None)
 palo_alto = Station("Palo Alto", 3, None)
-t_401 = Train(401, ServiceType.L4, None)
-t_105 = Train(105, ServiceType.L1, None)
-t_701 = Train(701, ServiceType.B7, None)
+t_401 = Train(401, ServiceType.L4)
+t_105 = Train(105, ServiceType.L1)
+t_701 = Train(701, ServiceType.B7)
 
 mountain_view.times_trains = [
   (time(6, 3), t_401),

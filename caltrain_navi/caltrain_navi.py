@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from datetime import time
 from bisect import bisect_left
 class ServiceType(Enum):
@@ -21,8 +21,8 @@ stations_to_services: Dict['Station', List['ServiceType']] = {
 @dataclass
 class Train:
   number: int
-  service_type: ServiceType 
-  stations: Dict[str, time] 
+  service_type: Optional[ServiceType] = None 
+  stations: Dict[str, time] = field(default_factory=dict) 
   direction: Direction = Direction.NB
 
 @dataclass
@@ -52,7 +52,7 @@ class Station:
                       trains: List[Train] = None, max_trains: int = 3):
     trains = self.times_trains if trains is None else trains
     if not self.trains_are_sorted(trains=trains):
-      raise Exception("Trains are not in sorted order")
+      raise Exception("Times trains tuples are not in sorted order")
     idx = bisect_left(trains, (time, None))
     return list(list(zip(*trains))[1])[idx: min(idx+max_trains, len(trains))]
     

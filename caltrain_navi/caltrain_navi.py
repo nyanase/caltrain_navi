@@ -20,16 +20,18 @@ stations_to_services: Dict['Station', List['ServiceType']] = {
 
 @dataclass
 class Train:
-  number: int
+  number: int = 0
   service_type: Optional[ServiceType] = None 
   stations: Dict[str, time] = field(default_factory=dict) 
   direction: Direction = Direction.NB
+  weekday: bool = True
 
 @dataclass
 class Station:
   name: str
   zone: int
-  times_trains: List[Tuple[time, Train]]
+  times_trains_nb: List[Tuple[time, Train]]
+  times_trains_sb: List[Tuple[time, Train]]
 
   def earliest_arrival_times(self, time: time, 
                       dest: 'Station', 
@@ -46,17 +48,17 @@ class Station:
   def relevant_train_lines(self, dest: 'Station'):
     services = stations_to_services[dest.name]
     return list(filter(lambda times_train: times_train[1].service_type in services, 
-                            self.times_trains))
+                            self.times_trains_nb))
 
   def earliest_trains(self, time: time, 
                       trains: List[Train] = None, max_trains: int = 3):
-    trains = self.times_trains if trains is None else trains
+    trains = self.times_trains_nb if trains is None else trains
     if not self.trains_are_sorted(trains=trains):
       raise Exception("Times trains tuples are not in sorted order")
     idx = bisect_left(trains, (time, None))
     return list(list(zip(*trains))[1])[idx: min(idx+max_trains, len(trains))]
     
   def trains_are_sorted(self, trains: List[Train] = None):
-    trains = self.times_trains if trains is None else trains
+    trains = self.times_trains_nb if trains is None else trains
     return all(trains[i][0] < trains[i+1][0] for i in range(len(trains)-1))
 

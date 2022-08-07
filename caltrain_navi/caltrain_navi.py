@@ -9,56 +9,65 @@ class ServiceType(Enum):
   L4 = auto()
   B7 = auto()
 
-class Direction(Enum):
+class Bound(Enum):
   NB = auto()
   SB = auto()
-
-stations_to_services: Dict['Station', List['ServiceType']] = {
-  "Mountain View": [ServiceType.L4, ServiceType.L1, ServiceType.B7],
-  "Palo Alto": [ServiceType.L4, ServiceType.L1, ServiceType.B7] 
-}
+  
+class Day(Enum):
+  WEEKDAY = auto()
+  WEEKEND = auto()
 
 @dataclass
 class Train:
   number: int = 0
   service_type: Optional[ServiceType] = None 
   stations: Dict[str, time] = field(default_factory=dict) 
-  direction: Direction = Direction.NB
+  Bound: Bound = Bound.NB
   weekday: bool = True
 
 @dataclass
 class Station:
   name: str
   zone: int
-  times_trains_nb: List[Tuple[time, Train]]
-  times_trains_sb: List[Tuple[time, Train]]
+  times_trains: List[Tuple[time, Train]]
 
-  def earliest_arrival_times(self, time: time, 
-                      dest: 'Station', 
-                      max_trains: int = 3):
-    trains_to_dest = self.relevant_train_lines(dest)
+  def earliest_arrival_times(self, 
+                             time: time, 
+                             dest: 'Station', 
+                             stations_to_trains: Dict[str, Train],
+                             day: Day = Day.WEEKDAY,
+                             bound: Bound = Bound.NB,
+                             max_trains: int = 3) -> List[time]:
+    relevant_trains = self.relevant_trains(dest, stations_to_trains, day, bound)
+    trains_to_dest = self.relevant_time_trains(relevant_trains)
     trains = self.earliest_trains(time, trains=trains_to_dest, 
                                   max_trains=max_trains) 
     return self.arrival_times(trains, dest)
     
   def arrival_times(self, trains: List['Train'], dest: 'Station', 
-                        sort: bool = True):
+                        sort: bool = True) -> List[time]:
     return sorted((train.stations[dest.name] for train in trains))
 
-  def relevant_train_lines(self, dest: 'Station'):
-    services = stations_to_services[dest.name]
-    return list(filter(lambda times_train: times_train[1].service_type in services, 
-                            self.times_trains_nb))
+  def relevant_time_trains(self, trains: List[Train] )-> List[Tuple[time, Train]]:
+    return list(filter(lambda times_train: \
+      times_train[1].number in trains, self.times_trains))
+  
+  def relevant_trains(self, dest: 'Station',
+                      stations_to_trains: Dict[str, Train],
+                      day: Day = Day.WEEKDAY,
+                      bound: Bound = Bound.NB) -> List[Train]:
+    return stations_to_trains[dest.name][day.name][bound.name]
 
   def earliest_trains(self, time: time, 
-                      trains: List[Train] = None, max_trains: int = 3):
-    trains = self.times_trains_nb if trains is None else trains
+                      trains: List[Train] = None, 
+                      max_trains: int = 3) -> List[Train]:
+    trains = self.times_trains if trains is None else trains
     if not self.trains_are_sorted(trains=trains):
       raise Exception("Times trains tuples are not in sorted order")
     idx = bisect_left(trains, (time, None))
     return list(list(zip(*trains))[1])[idx: min(idx+max_trains, len(trains))]
     
-  def trains_are_sorted(self, trains: List[Train] = None):
-    trains = self.times_trains_nb if trains is None else trains
+  def trains_are_sorted(self, trains: List[Train] = None) -> bool:
+    trains = self.times_trains if trains is None else trains
     return all(trains[i][0] < trains[i+1][0] for i in range(len(trains)-1))
 

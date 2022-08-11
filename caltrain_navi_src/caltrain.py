@@ -49,14 +49,11 @@ class Station:
 class CaltrainNavi:
   
   def __init__(self) -> None:
-    self.trains = {}
-    self.stations = {} 
-    self.stations_to_trains = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    
-
-    self.time = None
+    self.trains: Dict[str, Train] = {}
+    self.stations: Dict[str, Station] = {} 
+    self.stations_to_trains:Dict[str, str, str, List[Train]] = \
+      defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     self.day = Day.WEEKDAY
-
 
   def load_trains_and_stations(self, trains_path, stations_path, 
                                update_station_train=True):
@@ -65,14 +62,13 @@ class CaltrainNavi:
     if update_station_train: self.update_stations_to_trains()
     
   def earliest_arrival_times(self, 
-                            time: time, 
+                            dep_time: datetime, 
                             dep_sta: Station,
                             dest_sta: Station,
-                            day: Day = None,
                             max_trains: int = 3) -> List[time]:
-    relevant_trains = self.relevant_trains(dep_sta, dest_sta, day)
+    relevant_trains = self.relevant_trains(dep_sta, dest_sta, dep_time)
     trains_to_dest_sta = self.relevant_time_trains(dep_sta, relevant_trains)
-    trains = self.earliest_trains(time, time_trains=trains_to_dest_sta, 
+    trains = self.earliest_trains(dep_time, time_trains=trains_to_dest_sta, 
                                   max_trains=max_trains) 
     return self.arrival_times(trains, dest_sta)
   
@@ -86,8 +82,8 @@ class CaltrainNavi:
   
   def relevant_trains(self, dep_sta: Station, 
                       dest_sta: Station,
-                      day: Day) -> List[Train]:
-    day = self.day if day is None else day
+                      dep_time: datetime) -> List[Train]:
+    day = Day.WEEKDAY if dep_time.weekday() < 5 else Day.WEEKEND
     bound = Bound.NB if dep_sta.order < dest_sta.order else Bound.SB
     try:
       trains = self.stations_to_trains[dest_sta.name][day.name][bound.name]
@@ -95,14 +91,14 @@ class CaltrainNavi:
       raise KeyError(f"The mapping from station to train for {dest_sta.name}, {day}, {bound}")
     return trains
 
-  def earliest_trains(self, time: time, 
+  def earliest_trains(self, dep_time: datetime, 
                       time_trains: List[Tuple[time, Train]], 
                       max_trains: int = 3) -> List[Train]:
       
     if not self.trains_are_sorted(time_trains):
       #TODO: sort trains
       raise Exception("Times trains tuples are not in sorted order")
-    idx = bisect_left(time_trains, (time, None))
+    idx = bisect_left(time_trains, (dep_time.time(), None))
     return list(list(zip(*time_trains))[1])[idx: min(idx+max_trains, len(time_trains))]
     
   @staticmethod
@@ -171,9 +167,3 @@ class CaltrainNavi:
     fp.close()
     return data
   
-  
-if __name__ == "__main__":
-  caltrain_navi = CaltrainNavi()
-  trains_path = "/Users/naoyanase/Desktop/caltrain_navi/caltrain_scraper/scraped_data/trains.json"
-  stations_path = "/Users/naoyanase/Desktop/caltrain_navi/caltrain_scraper/scraped_data/stations.json"
-  caltrain_navi.load_trains_and_stations(trains_path, stations_path)

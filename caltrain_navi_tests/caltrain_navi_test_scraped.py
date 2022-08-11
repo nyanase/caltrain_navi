@@ -1,7 +1,7 @@
 import pytest
 from caltrain_navi_src.caltrain import CaltrainNavi, Train, Station
 from caltrain_navi_src.caltrain_data_loader import load_stations_data, load_trains_data
-from datetime import time
+from datetime import datetime, time
 from typing import Dict, List
 
 cn = CaltrainNavi()
@@ -17,23 +17,23 @@ def test_load_trains_and_stations():
   assert len(cn.stations_to_trains["San Mateo"]["WEEKDAY"]["NB"]) == 39
 
 def test_earliest_arrival_times_nb():
-  times = cn.earliest_arrival_times(time(6,0), 
+  times = cn.earliest_arrival_times(datetime(2022, 8, 10, 6, 0), 
                                     cn.stations["Mountain View"], 
                                     cn.stations["Palo Alto"])
   assert times == [time(6,10), time(6,21), time(6,31)] 
   
-  times = cn.earliest_arrival_times(time(17, 30), 
+  times = cn.earliest_arrival_times(datetime(2022, 8, 10, 17, 30), 
                                     cn.stations["Santa Clara"],
                                     cn.stations["San Francisco"])
   assert times == [time(19, 0), time(19,34), time(20,0)]
 
 def test_earliest_arrival_times_sb():
-  times = cn.earliest_arrival_times(time(18, 0),
+  times = cn.earliest_arrival_times(datetime(2022, 8, 10, 18, 0),
                                     cn.stations["San Francisco"],
                                     cn.stations["Mountain View"])
   assert times == [time(18, 57), time(19, 9), time(19, 29)]
 
-  times = cn.earliest_arrival_times(time(14, 45),
+  times = cn.earliest_arrival_times(datetime(2022, 8, 10, 14, 45),
                                     cn.stations["Millbrae"],
                                     cn.stations["San Jose Diridon"])
   assert times == [time(16,19), time(16,30), time(16,49)]

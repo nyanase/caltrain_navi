@@ -26,17 +26,17 @@ def setup_trains(rows, bound):
   train_nums_row, train_type_row = rows[NAME_ROW], rows[SERVICE_TYPE_ROW]
   for col in train_nums_row.find_all("td")[START_COL:]:
     trains.append({
-      "name": col.get_text(), 
-      "direction": bound, 
+      "number": col.get_text(), 
+      "bound": bound, 
       "stations": {},
-      "weekday": is_weekday_train(col) 
+      "day": is_weekday_train(col) 
     })
   for i, col in enumerate(train_type_row.find_all("td")[START_COL:]):
     trains[i]["service_type"] = col.get_text() 
   return trains
 
 def is_weekday_train(col):
-  return col["data-service-type"] == "weekday"
+  return "WEEKDAY" if col["data-service-type"] == "weekday" else "WEEKEND"
 
 def scrape_rows(rows, trains, bound="NB", stations=None):
   stations_ = [] if stations is None else stations
@@ -46,7 +46,7 @@ def scrape_rows(rows, trains, bound="NB", stations=None):
     if "zone-change" in row["class"]:
       continue
     cols = row.find_all("td")
-    station = setup_station(cols) if stations is None else stations_[i]
+    station = setup_station(cols, order=i) if stations is None else stations_[i]
     scrape_times(station, trains, cols)
     if stations is None: stations_.append(station)
     i += 1
@@ -57,14 +57,16 @@ def scrape_times(station, trains, cols):
     time = col.get_text()
     if time == "--":
       continue
-    station[f"times_trains"].append((time, trains[i]["name"]))
+    station[f"times_trains"].append((time, trains[i]["number"]))
     trains[i]["stations"][f"{station['name']}"] = time
   return
 
-def setup_station(cols):
+
+def setup_station(cols, order):
   station = {}
   station["zone"] = cols[0].get_text()
   station["name"] = cols[1].get_text()
+  station["order"] = order
   station["times_trains"] = [] 
   return station
 

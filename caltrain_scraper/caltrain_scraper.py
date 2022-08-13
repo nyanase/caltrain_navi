@@ -2,6 +2,7 @@ from asyncore import write
 from bs4 import BeautifulSoup
 import requests
 import json
+from caltrain_addresses import station_addresses
 
 NAME_ROW = 0
 SERVICE_TYPE_ROW = 1
@@ -10,9 +11,11 @@ SETUP_ROWS = 2
 CALTRAIN_URL = \
   "https://www.caltrain.com/schedules/pdf-schedules?active_tab=route_explorer_tab"
 
+
 def ct_soup():
   caltrain_page = requests.get(CALTRAIN_URL)
   return BeautifulSoup(caltrain_page.content, "html.parser")
+
 
 def scrape_sched(sched, bound, stations=None, prev_trains=None):
   rows = sched.find_all("tr")
@@ -20,6 +23,7 @@ def scrape_sched(sched, bound, stations=None, prev_trains=None):
   stations = scrape_rows(rows[SETUP_ROWS:], trains, bound=bound, stations=stations)
   if prev_trains: trains = prev_trains + trains
   return trains, stations
+
 
 def setup_trains(rows, bound):
   trains = [] 
@@ -52,6 +56,7 @@ def scrape_rows(rows, trains, bound="NB", stations=None):
     i += 1
   return stations_
 
+
 def scrape_times(station, trains, cols):
   for i, col in enumerate(cols[2:]):
     time = col.get_text()
@@ -63,17 +68,23 @@ def scrape_times(station, trains, cols):
 
 
 def setup_station(cols, order):
+  zone = cols[0].get_text()
+  name = cols[1].get_text()
   station = {}
-  station["zone"] = cols[0].get_text()
-  station["name"] = cols[1].get_text()
+  station["zone"] = zone
+  station["name"] = name
   station["order"] = order
   station["times_trains"] = [] 
+  station["address"] = station_addresses[name][0] 
+  station["coordinates"] = station_addresses[name][1] 
   return station
+
 
 def write_to_file(filename, data):
   with open(filename, 'w') as fp:
     json.dump(data, fp)
   return
+
 
 def main():
   wkday_soup = ct_soup() 
@@ -82,8 +93,8 @@ def main():
   trains, stations = scrape_sched(nb_wkday_sched, bound="NB")
   trains, stations = scrape_sched(sb_wkday_sched, bound="SB", 
                                   stations=stations, prev_trains=trains)
-  write_to_file("scraped_data/trains.json", trains)
-  write_to_file("scraped_data/stations.json", stations)
+  write_to_file("./scraped_data/trains.json", trains)
+  write_to_file("./scraped_data/stations.json", stations)
 
 if __name__ == "__main__":
   main()

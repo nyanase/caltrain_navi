@@ -27,7 +27,8 @@ class CN_Client:
     destinations = [station.address if station.address != "" \
       else station.coordinates for station in self.cnavi.stations.values()]
     durations = self.get_durations(origin, destinations[:10], *args, **kwargs)
-    return sorted(zip(durations, destinations))
+    return sorted(zip(durations, destinations),
+                  key=lambda k: k[0])
 
 
   def get_durations(self, *args, **kwargs):

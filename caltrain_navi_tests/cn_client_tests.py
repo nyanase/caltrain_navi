@@ -16,3 +16,37 @@ def test_get_duration():
   # assert durations == ["14 mins", "33 mins", "2 hours 21 mins"]
   assert durations == [time(0, 14), time(0, 33), time(2, 21)]
   
+def test_format_origin():
+  assert cn_client.format_origin("37.37687798746064, -122.10947593981749") == \
+    (37.37687798746064, -122.10947593981749)
+
+  assert cn_client.format_origin("(37.37687798746064, -122.10947593981749)") == \
+    (37.37687798746064, -122.10947593981749)
+  
+  assert cn_client.format_origin("319 Eleanor Avenue, Los Altos, CA 94022") == \
+    (37.3768696, -122.1095064) 
+  
+def test_times_stns_to_closest_stns():
+  time_stns = cn_client.times_stns_to_closest_stns(
+    "319 Eleanor Avenue, Los Altos, CA 94022",
+    num_stations=3,
+    mode="bicycling",
+  )
+  assert time_stns == [
+    (time(0,13), cn_client.cnavi.stations["San Antonio"]),
+    (time(0,14), cn_client.cnavi.stations["Mountain View"]),
+    (time(0,24), cn_client.cnavi.stations["California Avenue"]),
+  ]
+
+  time_stns = cn_client.times_stns_to_closest_stns(
+    "37.37687798746064, -122.10947593981749",
+    num_stations=3,
+    mode="bicycling",
+  )
+  assert time_stns == [
+    (time(0,13), cn_client.cnavi.stations["San Antonio"]),
+    (time(0,14), cn_client.cnavi.stations["Mountain View"]),
+    (time(0,24), cn_client.cnavi.stations["California Avenue"]),
+  ]
+  
+  

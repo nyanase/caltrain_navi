@@ -1,14 +1,6 @@
-from caltrain_navi.cn_client import CN_Client
-cn_client = CN_Client(gm_key="",
+from caltrain_navi.cn_client import CN_Client, get_coords_from_str
+from caltrain_navi.constants import google_maps_key
+cn_client = CN_Client(gm_key=google_maps_key,
                       trains_path="/Users/naoyanase/Desktop/caltrain_navi/caltrain_scraper/scraped_data/trains.json",
                       stations_path="/Users/naoyanase/Desktop/caltrain_navi/caltrain_scraper/scraped_data/stations.json"
             )
-
-duration = cn_client.get_durations("319 Eleanor Ave, Los Altos, CA 94022",
-  "600 W Evelyn Ave, Mountain View, CA 94041", 
-  mode="walking"
-)
-print(duration)
-
-closests = cn_client.get_closest_times_stations("319 Eleanor Ave, Los Altos, CA 94022")
-for closest in closests: print(closest)

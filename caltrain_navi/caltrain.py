@@ -6,6 +6,7 @@ from datetime import time
 from bisect import bisect_left
 import json
 from datetime import datetime
+import math
 
 @dataclass
 class Train:
@@ -42,6 +43,8 @@ class Station:
   coordinates: Tuple[float, float]
   times_trains: List[Tuple[time, Train]] = field(default_factory=list)
   
+  def distance_to(self, coords: Tuple[float, float]) -> float:
+    return math.dist(coords, self.coordinates)
   
   def __str__(self) -> str:
     times_trains_str = "["
@@ -140,10 +143,12 @@ class CaltrainNavi:
       self.stations[station.name] = station
     return True 
   
+  
   @staticmethod
   def format_coords(str):
     coords = str.replace(',', '').split()
     return float(coords[0]), float(coords[1])
+
 
   def build_train_from_dict(self, train_dict):
     return Train(

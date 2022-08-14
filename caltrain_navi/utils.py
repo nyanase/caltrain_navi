@@ -1,5 +1,6 @@
 import re
-from datetime import time
+from datetime import datetime, time
+import json
 
 def duration_to_time(duration):
   regex = r'((?P<hour>\d+) hours? )?(?P<minute>\d+) mins?'
@@ -28,3 +29,20 @@ def get_coords_from_str(str):
   if not m: return None
   return float(m.group('lat')), float(m.group('lng'))
 
+
+def format_coords(str):
+    coords = str.replace(',', '').split()
+    return float(coords[0]), float(coords[1])
+  
+
+def dict_vals_to_time(dict_):
+  for key, val in dict_.items():
+    dict_[key] = datetime.strptime(val, "%I:%M%p").time() 
+  return dict_
+
+
+def load_data(path):
+  fp = open(path, 'r')
+  data = json.loads(fp.read())
+  fp.close()
+  return data

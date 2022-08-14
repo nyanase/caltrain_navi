@@ -4,9 +4,9 @@ from enum import Enum, auto
 from typing import Dict, List, Tuple, Optional
 from datetime import time
 from bisect import bisect_left
-import json
 from datetime import datetime
 import math
+from caltrain_navi.utils import format_coords, dict_vals_to_time, load_data
 
 @dataclass
 class Train:
@@ -114,15 +114,10 @@ class CaltrainNavi:
       raise Exception("Times trains tuples are not in sorted order")
     idx = bisect_left(time_trains, (dep_time.time(), None))
     return list(list(zip(*time_trains))[1])[idx: min(idx+max_trains, len(time_trains))]
-  
-    
-  @staticmethod
-  def trains_are_sorted(time_trains: List[Train] = None) -> bool:
-    return all(time_trains[i][0] < time_trains[i+1][0] for i in range(len(time_trains)-1))
     
     
   def load_trains_data(self, path):
-    trains_dicts = self.load_data(path)
+    trains_dicts = load_data(path)
     for train_dict in trains_dicts:
       train = self.build_train_from_dict(train_dict)
       self.trains[train.number] = train
@@ -130,24 +125,18 @@ class CaltrainNavi:
   
   
   def load_stations_data(self, path):
-    stations_dicts = self.load_data(path)
+    stations_dicts = load_data(path)
     for station_dict in stations_dicts:
       station = Station(
         name=station_dict["name"],
         zone=station_dict["zone"],
         order=station_dict["order"],
         address=station_dict["address"],
-        coordinates=self.format_coords(station_dict["coordinates"]),
+        coordinates=format_coords(station_dict["coordinates"]),
         times_trains=self.update_times_trains(station_dict["times_trains"]) 
       )
       self.stations[station.name] = station
     return True 
-  
-  
-  @staticmethod
-  def format_coords(str):
-    coords = str.replace(',', '').split()
-    return float(coords[0]), float(coords[1])
 
 
   def build_train_from_dict(self, train_dict):
@@ -156,7 +145,7 @@ class CaltrainNavi:
       service_type=Train.ServiceType[f"{train_dict['service_type']}"],
       bound=Train.Bound[f"{train_dict['bound']}"],
       day=Train.Day[f"{train_dict['day']}"],
-      stations=self.dict_vals_to_time(train_dict["stations"]) 
+      stations=dict_vals_to_time(train_dict["stations"]) 
     )
 
 
@@ -179,20 +168,9 @@ class CaltrainNavi:
   def update_stations_to_trains(self):
     for _, station in self.stations.items():
       for _, train in station.times_trains:
-        self.stations_to_trains[f"{station.name}"][f"{train.day.name}"][f"{train.bound.name}"].append(train)
-
-
-  @staticmethod
-  def dict_vals_to_time(dict_):
-    for key, val in dict_.items():
-      dict_[key] = datetime.strptime(val, "%I:%M%p").time() 
-    return dict_
+        self.stations_to_trains[f"{station.name}"][f"{train.day.name}"] \
+          [f"{train.bound.name}"].append(train)
   
-  
-  @staticmethod
-  def load_data(path):
-    fp = open(path, 'r')
-    data = json.loads(fp.read())
-    fp.close()
-    return data
-  
+  def trains_are_sorted(self, time_trains: List[Train] = None) -> bool:
+    return all(time_trains[i][0] < time_trains[i+1][0] \
+      for i in range(len(time_trains)-1))

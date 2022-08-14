@@ -55,7 +55,6 @@ class Station:
 
 class CaltrainNavi:
   
-  
   def __init__(self, trains_path, stations_path) -> None:
     self.trains: Dict[str, Train] = {}
     self.stations: Dict[str, Station] = {} 
@@ -170,6 +169,7 @@ class CaltrainNavi:
       for _, train in station.times_trains:
         self.stations_to_trains[f"{station.name}"][f"{train.day.name}"] \
           [f"{train.bound.name}"].append(train)
+  
   
   def trains_are_sorted(self, time_trains: List[Train] = None) -> bool:
     return all(time_trains[i][0] < time_trains[i+1][0] \

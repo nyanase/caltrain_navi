@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import json
 
 def duration_to_time(duration):
@@ -12,7 +12,7 @@ def match_to_time(m):
   hour, minute = m.group('hour'), m.group('minute')
   hour = to_int_or_zero(hour)
   minute = to_int_or_zero(minute)
-  return time(hour=hour, minute=minute)
+  return timedelta(hours=hour, minutes=minute)
 
 
 def to_int_or_zero(str):

@@ -1,3 +1,4 @@
+from collections import defaultdict
 import googlemaps
 from caltrain_navi.caltrain import CaltrainNavi
 from caltrain_navi.utils import duration_to_time, duration_from_element, \
@@ -22,9 +23,24 @@ class CN_Client:
   
   def init_gmaps_client(self, key):
     return googlemaps.Client(key=key)
+  
+  
+  def earliest_arrivals(self, dep_time, dest_sta, 
+                        origin, *args, num_stations=3,
+                        max_trains=3, **kwargs):
+    ttstns_stns = self.ttstns_stns_to_closest_stns(
+      origin, num_stations, *args, **kwargs)
+    arrivals_res = []
+    for ttstn, stn in ttstns_stns:
+      stn_dep_time = dep_time + ttstn 
+      for arrv_time, train in self.cnavi.earliest_arrival_times(
+        stn_dep_time, stn, dest_sta, max_trains 
+      ):
+        arrivals_res.append((arrv_time, ttstn, stn, train))
+    return sorted(arrivals_res, key=lambda k: k[0])
 
   
-  def times_stns_to_closest_stns(
+  def ttstns_stns_to_closest_stns(
     self, origin, num_stations=6, *args, **kwargs):
     closest_sts = self.get_closest_stations(origin, num_stations) 
     cl_sts_locs = [self.station_loc(station) for station in closest_sts]
@@ -41,7 +57,6 @@ class CN_Client:
   def format_origin(self, origin):
     if isinstance(origin, str):
       coords = get_coords_from_str(origin)
-      print("coords", coords)
       return coords if coords else self.get_coords_from_address(origin)
     return origin
   

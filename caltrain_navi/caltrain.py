@@ -75,7 +75,7 @@ class CaltrainNavi:
                             dep_time: datetime, 
                             dep_sta: Station,
                             dest_sta: Station,
-                            max_trains: int = 3) -> List[time]:
+                            max_trains: int = 3) -> List[Tuple[time, Train]]:
     relevant_trains = self.relevant_trains(dep_sta, dest_sta, dep_time)
     trains_to_dest_sta = self.relevant_time_trains(dep_sta, relevant_trains)
     trains = self.earliest_trains(dep_time, time_trains=trains_to_dest_sta, 
@@ -83,9 +83,10 @@ class CaltrainNavi:
     return self.arrival_times(trains, dest_sta)
   
 
-  def arrival_times(self, trains: List['Train'], dest_sta: 'Station', 
-                        sort: bool = True) -> List[time]:
-    return sorted((train.stations[dest_sta.name] for train in trains))
+  def arrival_times(self, trains: List['Train'], 
+                    dest_sta: 'Station')-> List[Tuple[time, Train]]:
+    return sorted(((train.stations[dest_sta.name], train) for train in trains),
+                  key=lambda k: k[0])
 
 
   def relevant_time_trains(self, dep_sta: Train, trains: List[Train] )-> List[Tuple[time, Train]]:

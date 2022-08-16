@@ -112,7 +112,13 @@ class CaltrainNavi:
     if not self.trains_are_sorted(time_trains):
       #TODO: sort trains
       raise Exception("Times trains tuples are not in sorted order")
-    idx = bisect_left(time_trains, (dep_time.time(), None))
+    try:
+      idx = bisect_left(time_trains, dep_time.time(), key=lambda k: k[0])
+    except:
+      print(dep_time.time())
+      for time_train in time_trains:
+        print(time_train[0])
+      raise Exception("error here")
     return list(list(zip(*time_trains))[1])[idx: min(idx+max_trains, len(time_trains))]
     
     

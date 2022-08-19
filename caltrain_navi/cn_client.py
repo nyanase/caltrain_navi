@@ -1,8 +1,83 @@
 from collections import defaultdict
+from dataclasses import dataclass
 import googlemaps
-from caltrain_navi.caltrain import CaltrainNavi
+from caltrain_navi.caltrain import CaltrainNavi, Station, Train
 from caltrain_navi.utils import duration_to_time, duration_from_element, \
-  get_coords_from_str
+  get_coords_from_str, drop_mins_secs
+from datetime import datetime, time, timedelta
+from inspect import cleandoc
+
+@dataclass
+class CalTrainNaviRes:
+
+  arrival_time: time
+  time_to_stn: timedelta
+  dep_stn: Station
+  train: Train
+  dep_time: datetime
+  dest_stn: Station
+
+
+  def dep_stn_arrival_time(self):
+    return (self.dep_time + self.time_to_stn).time()    
+
+
+  def time_waiting_for_train(self):
+    dep_stn_arrv_time = datetime(1, 1, 1, 
+          hour=(self.dep_time + self.time_to_stn).hour,
+          minute=(self.dep_time + self.time_to_stn).minute
+    )
+    dep_stn_dep_time = datetime(1, 1, 1, 
+          hour=self.train.stations[self.dep_stn.name].hour, 
+          minute=self.train.stations[self.dep_stn.name].minute
+    ) 
+    return dep_stn_dep_time - dep_stn_arrv_time
+  
+  
+  def time_on_train(self):
+    leave_time = datetime(1, 1, 1, 
+          hour=self.train.stations[self.dep_stn.name].hour, 
+          minute=self.train.stations[self.dep_stn.name].minute
+    ) 
+    arrv_time = datetime(1, 1, 1, hour=self.arrival_time.hour,
+                               minute=self.arrival_time.minute)
+    return arrv_time - leave_time
+
+
+  def time_waiting_for_train_to_str(self):
+    time_waiting = self.time_waiting_for_train()
+    print_str = "Wait for: {hours} {hours_str} {mins} {mins_str}"
+    return self.deltas_to_str(time_waiting, print_str)
+
+  
+  def time_on_train_to_str(self):
+    time_waiting = self.time_on_train()
+    print_str = "Ride train for: {hours} {hours_str} {mins} {mins_str}"
+    return self.deltas_to_str(time_waiting, print_str)
+  
+
+  def deltas_to_str(self, time_waiting, print_str):
+    hours = time_waiting.seconds // 3600
+    mins = (time_waiting.seconds // 60) % 60
+    hours_str = "hour" if hours == 1 else "hours"
+    mins_str = "min" if mins == 1 else "mins" 
+    return print_str.format(hours=hours, hours_str=hours_str,
+                            mins=mins, mins_str=mins_str)
+
+
+  def __str__(self):
+    dep_stn_arrival_time = self.dep_stn_arrival_time()
+    s =  cleandoc(f"""
+      Current time: {self.dep_time.time()}
+      Time to {self.dep_stn.name} stn: {self.time_to_stn}
+      Arrive at {self.dep_stn.name} at: {dep_stn_arrival_time}
+      {self.time_waiting_for_train_to_str()}
+      Depart train {self.train.number} {self.train.bound_to_str()} at: {self.train.stations[self.dep_stn.name]}
+      {self.time_on_train_to_str()}
+      Arrive at {self.dest_stn.name} stn at: {self.arrival_time}
+      """)
+    return s
+
 
 class CN_Client:
 
@@ -28,6 +103,7 @@ class CN_Client:
   def earliest_arrivals(self, dep_time, dest_sta, 
                         origin, *args, num_stations=3,
                         max_trains=3, **kwargs):
+    dep_time = drop_mins_secs(dep_time)
     ttstns_stns = self.ttstns_stns_to_closest_stns(
       origin, num_stations, *args, **kwargs)
     arrivals_res = []
@@ -36,8 +112,16 @@ class CN_Client:
       for arrv_time, train in self.cnavi.earliest_arrival_times(
         stn_dep_time, stn, dest_sta, max_trains 
       ):
-        arrivals_res.append((arrv_time, ttstn, stn, train))
-    return sorted(arrivals_res, key=lambda k: k[0])
+        cn_res = CalTrainNaviRes(
+          arrival_time=arrv_time,
+          time_to_stn=ttstn,
+          dep_stn=stn,
+          train=train,
+          dep_time=dep_time,
+          dest_stn=dest_sta
+        )
+        arrivals_res.append(cn_res)
+    return sorted(arrivals_res, key=lambda k: k.arrival_time)
 
   
   def ttstns_stns_to_closest_stns(

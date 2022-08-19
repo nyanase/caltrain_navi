@@ -33,6 +33,9 @@ class Train:
   bound: Bound = Bound.NB
   day: Day = Day.WEEKDAY
 
+  def bound_to_str(self):
+    return "northbound" if self.bound == self.Bound.NB else "southbound"
+
 
 @dataclass
 class Station:

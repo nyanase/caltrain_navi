@@ -49,5 +49,5 @@ def test_ttstns_stns_to_closest_stns():
     (timedelta(minutes=14), cn_client.cnavi.stations["Mountain View"]),
     (timedelta(minutes=24), cn_client.cnavi.stations["California Avenue"]),
   ]
-  
+
   

@@ -46,3 +46,7 @@ def load_data(path):
   data = json.loads(fp.read())
   fp.close()
   return data
+
+
+def drop_mins_secs(dt):
+  return dt.replace(second=0, microsecond=0)
